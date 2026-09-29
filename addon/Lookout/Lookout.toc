@@ -5,6 +5,7 @@
 ## Version: 0.1.0
 ## SavedVariables: LookoutDB
 ## OptionalDeps: TomTom
+## X-License: MIT
 Core.lua
 Alerts.lua
 Quests.lua
