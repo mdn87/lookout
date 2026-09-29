@@ -2,3 +2,5 @@ pushover.json
 __pycache__/
 .venv/
 config.json
+.Codex/handoff.md
+.Codex/handoff-history/
