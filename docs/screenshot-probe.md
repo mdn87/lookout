@@ -1,7 +1,8 @@
 # One-Shot Screenshot Probe
 
-This experiment is separate from the normal chat-log companion. It does not
-automatically watch screenshots or change how normal alerts are delivered.
+This experiment came first. Normal phone alerts now use the same drawing and screenshot
+code, rate limited and read automatically by the tray app (see the README). The probe below
+is still there as a manual check.
 
 1. Install Python dependencies with `python -m pip install -r requirements-probe.txt`.
 2. Install the updated addon and `/reload` in game.

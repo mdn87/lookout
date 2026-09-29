@@ -22,12 +22,9 @@ them. If a button has a different name, look for the nearest match.
 
    `Pushover answered 200` means Pushover accepted the message, not that the phone displayed
    it. Check the phone and its notification permissions. Failures print diagnostic details.
-5. In game, `/reload` and then `/lo test`. This checks the whole chain: addon, chat log, tray
-   app, phone.
-
-   **Known limitation (Forever beta 1.60.1.70009):** this test reached the chat log and Pushover
-   only after logout. Reloading and toggling chat logging did not flush the buffered message.
-   A successful delivery after logout does not validate live alerts during play.
+5. Start the tray app (`start-companion.cmd`). In game, `/reload` and then `/lo test`. A QR
+   code flashes in the bottom-left corner, and the push should reach the phone within a few
+   seconds. This checks the whole chain: addon, screenshot, tray app, phone.
 
 ## 2. CurseForge
 

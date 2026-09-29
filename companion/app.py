@@ -1,4 +1,5 @@
-"""Lookout companion: a tray icon that watches the chat log and sends alerts to your phone.
+"""Lookout companion: a tray icon that reads alerts from the addon's screenshots (or the chat
+log) and sends them to your phone.
 
     pythonw -m companion.app            tray icon (start-companion.cmd does this)
     python -m companion.app --console   print alerts in a terminal instead, no tray
@@ -14,7 +15,8 @@ from . import chatlog, notify
 
 
 class Watcher:
-    """Polls the chat log on a thread and hands each new signal to deliver()."""
+    """Polls the Screenshots folders and the chat log on a thread and hands each batch of new
+    alerts to deliver(signals, dropped)."""
 
     def __init__(self, config, deliver, poll=1.0):
         self.config, self.deliver, self.poll = config, deliver, poll
@@ -24,6 +26,7 @@ class Watcher:
         self.path = None
         self.follower = None
         self.dedupe = chatlog.Deduper()
+        self.folders = None
         self.stopping = threading.Event()
 
     def choose_log(self):
@@ -32,32 +35,64 @@ class Watcher:
         logs = chatlog.find_chat_logs()
         return logs[0] if logs else None
 
-    def step(self):
-        """One poll: find the log if needed, read new lines, deliver signals."""
+    def hand_over(self, signals, dropped=0):
+        first = signals[0]
+        more = f" (+{len(signals) - 1})" if len(signals) > 1 else ""
+        self.last = f"{time.strftime('%H:%M')} {first.kind}: {first.text[:60]}{more}"
+        if not self.paused:
+            self.deliver(signals, dropped)
+
+    def step_screenshots(self):
+        """Read new screenshots; a decoded Lookout screenshot is deleted unless keep_screenshots."""
+        from . import screenshots   # needs zxing-cpp, which the chat-log route doesn't
+        if self.folders is None:
+            dirs = self.config.get("screenshot_dirs")
+            dirs = [Path(d) for d in dirs] if dirs is not None else screenshots.find_screenshot_dirs()
+            self.folders = [screenshots.Folder(d) for d in dirs]
+        for folder in self.folders:
+            for path, shot in folder.poll():
+                if not shot:
+                    continue
+                self.hand_over(list(shot.signals), shot.dropped)
+                if not self.config.get("keep_screenshots"):
+                    try:
+                        path.unlink()
+                    except OSError:
+                        pass
+        return bool(self.folders)
+
+    def step_chat_log(self):
+        """Find the log if needed, read new lines, deliver signals. Returns a problem or None."""
         path = self.choose_log()
         if path != self.path:
             self.path, self.follower = path, chatlog.Follower(path) if path else None
         if not self.follower:
-            self.status = "no WoW install found"
-            return
+            return "no WoW install found"
         if not self.path.exists():
-            self.status = "waiting for the chat log (log in with the addon, or type /chatlog)"
-            return
-        self.status = "paused" if self.paused else "watching"
+            return "waiting for the chat log (log in with the addon, or type /chatlog)"
         for line in self.follower.poll():
             signal = chatlog.parse(line)
-            if not signal or not self.dedupe.fresh(signal):
-                continue
-            self.last = f"{time.strftime('%H:%M')} {signal.kind}: {signal.text[:60]}"
-            if not self.paused:
-                self.deliver(signal)
+            if signal and self.dedupe.fresh(signal):
+                self.hand_over([signal])
+        return None
+
+    def step(self):
+        """One poll of every source."""
+        watching_shots = self.step_screenshots()
+        problem = self.step_chat_log()
+        if self.paused:
+            self.status = "paused"
+        elif watching_shots or not problem:
+            self.status = "watching"
+        else:
+            self.status = problem
 
     def run(self):
         while not self.stopping.is_set():
             try:
                 self.step()
             except OSError as error:
-                self.status = f"error reading the chat log: {error}"
+                self.status = f"error reading game files: {error}"
             self.stopping.wait(self.poll)
 
 
@@ -78,9 +113,10 @@ def run_tray(config):
     idle = make_icon_image((120, 120, 120, 255))
     icon = pystray.Icon("Lookout", idle, "Lookout")
 
-    def deliver(signal):
-        sent, detail = notify.send(notify.load_config(), signal)   # re-read so new keys apply without a restart
-        icon.notify(signal.text[:200] + ("" if sent else f"\n(phone: {detail})"), notify.TITLES.get(signal.kind, "Lookout"))
+    def deliver(signals, dropped=0):
+        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
+        title, message, _ = notify.compose(signals, dropped)
+        icon.notify(message[:200] + ("" if sent else f"\n(phone: {detail})"), title)
 
     watcher = Watcher(config, deliver)
 
@@ -95,7 +131,7 @@ def run_tray(config):
         watcher.paused = not watcher.paused
 
     def test_alert(_icon, _item):
-        deliver(chatlog.Signal("companion", "test", "Phone alerts from the Lookout companion work."))
+        deliver([chatlog.Signal("companion", "test", "Phone alerts from the Lookout companion work.")])
 
     def open_logs(_icon, _item):
         if watcher.path:
@@ -120,9 +156,11 @@ def run_tray(config):
 
 
 def run_console(config):
-    def deliver(signal):
-        sent, detail = notify.send(notify.load_config(), signal)   # re-read so new keys apply without a restart
-        print(f"{signal.kind}: {signal.text}  [{detail}]", flush=True)
+    def deliver(signals, dropped=0):
+        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
+        for signal in signals:
+            print(f"{signal.kind}: {signal.text}", flush=True)
+        print(f"  [{detail}]", flush=True)
 
     watcher = Watcher(config, deliver)
     shown = None

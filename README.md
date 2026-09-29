@@ -12,15 +12,23 @@ A World of Warcraft addon plus a small Windows tray app.
 
 ## Why there are two parts
 
-Addons can't reach the network or write files while you play. The addon sends each phone
-alert as a whisper to yourself (`LOOKOUT :: <character> :: <kind> :: <text>`), hidden from
-your chat window. The game writes it to `Logs/WoWChatLog.txt`, and the companion reads that
-file and calls Pushover.
+Addons can't reach the network or write files while you play, but they can take a
+screenshot. For each phone alert the addon draws a QR code in the bottom-left corner for
+about a second and takes a screenshot. The companion watches the game's `Screenshots`
+folder, reads the code, sends the push through Pushover, and deletes that screenshot.
+Your own screenshots are left alone.
 
-**Current limitation:** on Forever beta 1.60.1.70009, the in-game test was buffered until
-logout before it appeared in the chat log. Reloading and toggling logging did not flush it.
-The companion therefore cannot currently guarantee alerts during play; do not rely on this
-connection for time-sensitive whispers, invites, or queue notifications.
+Screenshots are rate limited: at most one every 20 seconds (5 for group invites, queue pops
+and ready checks) and 30 an hour. Alerts raised in between go out together in the next
+screenshot, as one push. If more than 20 pile up, the oldest ordinary ones are dropped and
+the next push says how many. During a fight you're at the keyboard for, ordinary alerts
+wait until it ends so the code doesn't cover your screen. `/lo rate` shows or changes the
+limits.
+
+The older route, `/lo transport chat`, whispers each alert to yourself
+(`LOOKOUT :: <character> :: <kind> :: <text>`) for the companion to read from
+`Logs/WoWChatLog.txt`. On Forever beta 1.60.1.70009 the game only writes that file at
+logout, so it can't deliver alerts during play there.
 
 ## Setup
 
@@ -38,20 +46,20 @@ connection for time-sensitive whispers, invites, or queue notifications.
 | `/lo word add <text>`, `/lo word remove <text>`, `/lo words` | chat keywords |
 | `/lo alert <kind> phone\|screen\|off`, `/lo alerts` | where each kind of alert goes |
 | `/lo phone on\|off`, `/lo hide on\|off`, `/lo test` | phone alerts, hiding the signal whispers, a test alert |
+| `/lo transport screenshot\|chat`, `/lo rate [seconds perHour]` | how phone alerts leave the game, screenshot limits |
 | `/lo quests`, `/lo way [questID]`, `/lo providers` | quest panel, waypoint, location sources |
 
 Alert kinds: `whisper`, `seen`, `keyword`, `invite`, `queue`, `readycheck`, `afk`, `quest`, `test`.
 
 ## Tests
 
-`.venv\Scripts\python -m pytest` loads the addon into Lua 5.1 against a stubbed game API and
-tests the companion's log reader. Install `requirements-probe.txt` to include the
-experimental screenshot decoder tests.
+`.venv\Scripts\python -m pytest` loads the addon into Lua 5.1 against a stubbed game API,
+draws its QR code into an image, and checks that the companion reads it back.
 
-## Screenshot Experiment
+## Screenshot probe
 
-A one-shot [screenshot probe](docs/screenshot-probe.md) demonstrated delivery to a
-phone without logging out. It is not connected to normal alerts yet.
+`/lo qrtest <code>` is the one-shot [screenshot probe](docs/screenshot-probe.md) that first
+proved a screenshot reaches the phone without logging out.
 
 ## Releasing
 

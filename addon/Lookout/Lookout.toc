@@ -11,4 +11,5 @@ Alerts.lua
 Quests.lua
 Integrations.lua
 vendor/qrencode.lua
+Screenshot.lua
 ScreenshotProbe.lua

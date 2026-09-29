@@ -17,7 +17,8 @@ URGENT = {"queue", "readycheck", "invite"}   # these time out in game, so they b
 
 
 def load_config(path=CONFIG):
-    """config.json: {"pushover": {"token": ..., "user": ...}, "chat_log": optional path}."""
+    """config.json: {"pushover": {"token": ..., "user": ...}, optional "chat_log",
+    "screenshot_dirs" and "keep_screenshots"}."""
     try:
         return json.loads(Path(path).read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -29,16 +30,28 @@ def pushover_keys(config):
     return keys.get("token"), keys.get("user")
 
 
-def send(config, signal):
-    """Send one alert. Returns (sent, detail)."""
+def compose(signals, dropped=0):
+    """Title, message and priority for one push carrying one or more alerts."""
+    first = signals[0]
+    if len(signals) == 1:
+        title = f"{TITLES.get(first.kind, first.kind)} ({first.char})"
+        message = first.text or "(no text)"
+    else:
+        title = f"{len(signals)} alerts ({first.char})"
+        message = "\n".join(f"{TITLES.get(s.kind, s.kind)}: {s.text}" for s in signals)
+    if dropped:
+        message += f"\n(+{dropped} older alerts dropped by the rate limit)"
+    return title, message[:1024], 1 if any(s.kind in URGENT for s in signals) else 0
+
+
+def send(config, *signals, dropped=0):
+    """Send one push for these alerts. Returns (sent, detail)."""
     token, user = pushover_keys(config)
     if not token or not user or token.startswith("your-") or user.startswith("your-"):
         return False, f"no Pushover keys yet: paste your token and user key into {CONFIG}"
+    title, message, priority = compose(signals, dropped)
     body = urllib.parse.urlencode({
-        "token": token, "user": user,
-        "title": f"{TITLES.get(signal.kind, signal.kind)} ({signal.char})",
-        "message": signal.text or "(no text)",
-        "priority": 1 if signal.kind in URGENT else 0,
+        "token": token, "user": user, "title": title, "message": message, "priority": priority,
     }).encode()
     try:
         with urllib.request.urlopen("https://api.pushover.net/1/messages.json", body, timeout=15) as reply:

@@ -1,9 +1,11 @@
 -- Lookout core: saved settings, slash commands and the alert pipeline.
 --
 -- An alert always shows on screen. For kinds set to "phone" it also goes to the Lookout
--- companion as a whisper to yourself ("LOOKOUT :: <character> :: <kind> :: <text>"), which
--- the game writes to Logs/WoWChatLog.txt. Addons can't reach the network or write files
--- while you play, so the chat log is the only live way out of the game.
+-- companion. Addons can't reach the network or write files while you play, so there are
+-- two ways out of the game:
+--   screenshot (default): a QR code in a screenshot, see Screenshot.lua.
+--   chat: a whisper to yourself ("LOOKOUT :: <character> :: <kind> :: <text>") that the game
+--         writes to Logs/WoWChatLog.txt. Forever beta 1.60.1.70009 only writes it at logout.
 local ADDON, ns = ...
 
 ns.DEFAULT_ALERTS = {
@@ -26,6 +28,9 @@ local function withDefaults(db)
     if db.phone == nil then db.phone = true end
     if db.hideSignals == nil then db.hideSignals = true end
     db.cooldown = db.cooldown or 60
+    db.transport = db.transport or "screenshot"
+    db.shotGap = db.shotGap or 20
+    db.shotsPerHour = db.shotsPerHour or 30
     return db
 end
 
@@ -88,6 +93,10 @@ function ns.emit(kind, text, key)
     RaidNotice_AddMessage(RaidWarningFrame, text, ChatTypeInfo["RAID_WARNING"])
     PlaySound(SOUNDKIT.RAID_WARNING, "Master")
     if mode ~= "phone" or not db.phone then return false end
+    if db.transport == "screenshot" then
+        ns.sendShot(kind, text)
+        return true
+    end
 
     local me, suffix = UnitName("player")
     -- Forever returns a surname as the second value; other clients may return a realm.
@@ -116,6 +125,7 @@ local HELP = {
     "/lo word add <text>, /lo word remove <text>, /lo words - chat keywords",
     "/lo alert <kind> phone|screen|off, /lo alerts - where each alert goes",
     "/lo phone on|off, /lo hide on|off, /lo test - phone alerts",
+    "/lo transport screenshot|chat, /lo rate [seconds perHour] - how phone alerts leave the game",
     "/lo quests, /lo way [questID], /lo providers - quest helper",
 }
 

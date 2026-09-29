@@ -14,8 +14,7 @@ def files_in_toc():
     return [line.strip() for line in lines if line.strip() and not line.startswith("##")]
 
 
-@pytest.fixture
-def game():
+def start(transport=None):
     lua = lua51.LuaRuntime(unpack_returned_tuples=True)
     lua.execute((Path(__file__).parent / "wow_stub.lua").read_text(encoding="utf-8"))
     T = lua.globals().T
@@ -25,7 +24,21 @@ def game():
     T.fire("ADDON_LOADED", "Lookout")
     T.fire("PLAYER_LOGIN")
     T.flush()
+    if transport:
+        lua.globals().LookoutDB.transport = transport
     return lua, T
+
+
+@pytest.fixture
+def game():
+    """The chat-log route, where each phone alert is one whisper these tests can read."""
+    return start("chat")
+
+
+@pytest.fixture
+def shot_game():
+    """The default screenshot route."""
+    return start()
 
 
 def sent(T):

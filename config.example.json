@@ -3,5 +3,7 @@
     "token": "your-pushover-application-token",
     "user": "your-pushover-user-key"
   },
-  "chat_log": null
+  "chat_log": null,
+  "screenshot_dirs": null,
+  "keep_screenshots": false
 }

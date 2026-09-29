@@ -1,6 +1,6 @@
 -- Just enough of the WoW client API to load Lookout and fire events at it in tests.
-T = { sent = {}, screen = {}, printed = {}, timers = {}, frames = {}, filters = {}, afk = false,
-      now = 100, logging = false, bg = {}, waypoints = {} }
+T = { sent = {}, screen = {}, printed = {}, timers = {}, dues = {}, frames = {}, filters = {}, afk = false,
+      now = 100, logging = false, bg = {}, waypoints = {}, combat = false }
 
 local function noop() end
 local function widget(kind)
@@ -13,7 +13,16 @@ local function widget(kind)
     function obj:SetText(text) self.text = text end
     function obj:GetStringHeight() return 12 end
     function obj:CreateFontString() return widget("FontString") end
-    function obj:CreateTexture() return widget("Texture") end
+    function obj:CreateTexture()
+        local texture = widget("Texture")
+        local list = rawget(self, "textures") or {}
+        self.textures = list
+        list[#list + 1] = texture
+        return texture
+    end
+    function obj:SetSize(w, h) self.w, self.h = w, h end
+    function obj:SetPoint(_, _, _, x, y) self.x, self.y = x, y end
+    function obj:SetColorTexture(r) self.color = r end
     function obj:GetEffectiveScale() return 1 end
     function obj:GetHeight() return 768 end
     function obj:SetScale(value) self.scale = value end
@@ -32,10 +41,27 @@ function T.fire(event, ...)
     end
 end
 
+-- Run every waiting timer, whatever its delay.
 function T.flush()
     local due = T.timers
-    T.timers = {}
+    T.timers, T.dues = {}, {}
     for _, fn in ipairs(due) do fn() end
+end
+
+-- Move the clock forward and run the timers that come due, in order.
+function T.advance(seconds)
+    local target = T.now + seconds
+    while true do
+        local pick
+        for i, at in ipairs(T.dues) do
+            if at <= target and (not pick or at < T.dues[pick]) then pick = i end
+        end
+        if not pick then break end
+        local fn = table.remove(T.timers, pick)
+        T.now = math.max(T.now, table.remove(T.dues, pick))
+        fn()
+    end
+    T.now = target
 end
 
 UIParent = widget("Frame")
@@ -43,10 +69,14 @@ RaidWarningFrame = {}
 SOUNDKIT = { RAID_WARNING = 8959 }
 ChatTypeInfo = setmetatable({}, { __index = function() return {} end })
 SlashCmdList = {}
-C_Timer = { After = function(_, fn) T.timers[#T.timers + 1] = fn end }
+C_Timer = { After = function(delay, fn)
+    T.timers[#T.timers + 1] = fn
+    T.dues[#T.dues + 1] = T.now + delay
+end }
 
 function UnitName() return "Yizzity" end
 function UnitIsAFK() return T.afk end
+function InCombatLockdown() return T.combat end
 function GetTime() return T.now end
 function Screenshot() T.screenshots = (T.screenshots or 0) + 1 end
 function GetPhysicalScreenSize() return 3840, 2160 end
@@ -81,6 +111,7 @@ C_QuestLog = {
 function T.slash(text) SlashCmdList.LOOKOUT(text) end
 
 function T.load(ns, name, src)
+    T.ns = ns
     local chunk = assert(loadstring(src, "@" .. name))
     chunk("Lookout", ns)
 end

@@ -53,7 +53,7 @@ def test_watcher_delivers_once_and_respects_pause(tmp_path):
     log = tmp_path / "WoWChatLog.txt"
     log.write_text("", encoding="utf-8")
     got = []
-    watcher = Watcher({"chat_log": str(log)}, got.append)
+    watcher = Watcher({"chat_log": str(log), "screenshot_dirs": []}, lambda signals, dropped=0: got.extend(signals))
     watcher.step()
     assert watcher.status == "watching"
     with log.open("a", encoding="utf-8") as handle:
@@ -68,7 +68,7 @@ def test_watcher_delivers_once_and_respects_pause(tmp_path):
 
 
 def test_watcher_waits_for_a_log_that_does_not_exist_yet(tmp_path):
-    watcher = Watcher({"chat_log": str(tmp_path / "WoWChatLog.txt")}, lambda signal: None)
+    watcher = Watcher({"chat_log": str(tmp_path / "WoWChatLog.txt"), "screenshot_dirs": []}, lambda *_: None)
     watcher.step()
     assert watcher.status.startswith("waiting for the chat log")
 
@@ -87,3 +87,12 @@ def test_send_treats_example_placeholders_as_missing():
 def test_tray_image_builds():
     from companion.app import make_icon_image
     assert make_icon_image((1, 2, 3, 255)).size == (64, 64)
+
+
+def test_one_push_carries_a_batch_and_buzzes_for_urgent_kinds():
+    one = notify.compose([chatlog.Signal("Yizzity", "whisper", "Bob: hi")])
+    assert one == ("Whisper (Yizzity)", "Bob: hi", 0)
+    title, message, priority = notify.compose(
+        [chatlog.Signal("Yizzity", "whisper", "Bob: hi"), chatlog.Signal("Yizzity", "queue", "Dungeon ready")], dropped=3)
+    assert title == "2 alerts (Yizzity)" and priority == 1
+    assert message.splitlines() == ["Whisper: Bob: hi", "Queue ready: Dungeon ready", "(+3 older alerts dropped by the rate limit)"]
