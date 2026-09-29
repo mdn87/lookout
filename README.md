@@ -45,7 +45,13 @@ Alert kinds: `whisper`, `seen`, `keyword`, `invite`, `queue`, `readycheck`, `afk
 ## Tests
 
 `.venv\Scripts\python -m pytest` loads the addon into Lua 5.1 against a stubbed game API and
-tests the companion's log reader.
+tests the companion's log reader. Install `requirements-probe.txt` to include the
+experimental screenshot decoder tests.
+
+## Screenshot Experiment
+
+A one-shot [screenshot probe](docs/screenshot-probe.md) demonstrated delivery to a
+phone without logging out. It is not connected to normal alerts yet.
 
 ## Releasing
 
@@ -66,4 +72,5 @@ The companion app isn't part of the addon zip. Step-by-step account setup is in
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The vendored Lua QR encoder retains its BSD-3-Clause
+license; see [vendor attribution](addon/Lookout/vendor/README.md).

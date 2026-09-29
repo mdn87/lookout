@@ -13,6 +13,10 @@ local function widget(kind)
     function obj:SetText(text) self.text = text end
     function obj:GetStringHeight() return 12 end
     function obj:CreateFontString() return widget("FontString") end
+    function obj:CreateTexture() return widget("Texture") end
+    function obj:GetEffectiveScale() return 1 end
+    function obj:GetHeight() return 768 end
+    function obj:SetScale(value) self.scale = value end
     return setmetatable(obj, { __index = function() return noop end })
 end
 
@@ -44,6 +48,8 @@ C_Timer = { After = function(_, fn) T.timers[#T.timers + 1] = fn end }
 function UnitName() return "Yizzity" end
 function UnitIsAFK() return T.afk end
 function GetTime() return T.now end
+function Screenshot() T.screenshots = (T.screenshots or 0) + 1 end
+function GetPhysicalScreenSize() return 3840, 2160 end
 function LoggingChat(on) if on ~= nil then T.logging = on end return T.logging end
 function PlaySound() end
 function RaidNotice_AddMessage(_, text) T.screen[#T.screen + 1] = text end
