@@ -17,6 +17,11 @@ alert as a whisper to yourself (`LOOKOUT :: <character> :: <kind> :: <text>`), h
 your chat window. The game writes it to `Logs/WoWChatLog.txt`, and the companion reads that
 file and calls Pushover.
 
+**Current limitation:** on Forever beta 1.60.1.70009, the in-game test was buffered until
+logout before it appeared in the chat log. Reloading and toggling logging did not flush it.
+The companion therefore cannot currently guarantee alerts during play; do not rely on this
+connection for time-sensitive whispers, invites, or queue notifications.
+
 ## Setup
 
 1. `python -m venv .venv` and `.venv\Scripts\pip install -r requirements.txt`

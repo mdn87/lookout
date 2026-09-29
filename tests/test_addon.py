@@ -46,6 +46,22 @@ def test_login_turns_on_the_chat_log(game):
     assert lua.globals().LookoutDB.alerts.whisper == "phone"
 
 
+@pytest.mark.parametrize("suffix,expected", [
+    ("Surname", "Example-Surname"),
+    ("OtherRealm", "Example-OtherRealm"),
+    ("", "Example"),
+    (None, "Example"),
+])
+def test_signal_whispers_to_the_complete_player_name(game, suffix, expected):
+    lua, T = game
+    T.name_suffix = suffix
+    lua.execute('function UnitName() return "Example", T.name_suffix end')
+    T.slash("test")
+    assert sent(T) == [
+        (f"LOOKOUT :: {expected} :: test :: Lookout test alert", "WHISPER", expected)
+    ]
+
+
 def test_watched_whisper_goes_to_the_phone_once_per_cooldown(game):
     lua, T = game
     T.slash("add Saalora")

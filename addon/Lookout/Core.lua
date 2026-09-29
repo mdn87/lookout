@@ -89,7 +89,9 @@ function ns.emit(kind, text, key)
     PlaySound(SOUNDKIT.RAID_WARNING, "Master")
     if mode ~= "phone" or not db.phone then return false end
 
-    local me = UnitName("player")
+    local me, suffix = UnitName("player")
+    -- Forever returns a surname as the second value; other clients may return a realm.
+    if suffix and suffix ~= "" then me = me .. "-" .. suffix end
     local away = UnitIsAFK("player")
     SendChatMessage((PREFIX .. me .. " :: " .. kind .. " :: " .. text):sub(1, 250), "WHISPER", nil, me)
     if away then keepAway() end

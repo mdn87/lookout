@@ -20,10 +20,14 @@ them. If a button has a different name, look for the nearest match.
    .venv/Scripts/python -m companion.app --test-push
    ```
 
-   `Pushover answered 200` means your phone should buzz. Any other reply names the key Pushover
-   rejected.
+   `Pushover answered 200` means Pushover accepted the message, not that the phone displayed
+   it. Check the phone and its notification permissions. Failures print diagnostic details.
 5. In game, `/reload` and then `/lo test`. This checks the whole chain: addon, chat log, tray
    app, phone.
+
+   **Known limitation (Forever beta 1.60.1.70009):** this test reached the chat log and Pushover
+   only after logout. Reloading and toggling chat logging did not flush the buffered message.
+   A successful delivery after logout does not validate live alerts during play.
 
 ## 2. CurseForge
 
