@@ -1,0 +1,16 @@
+# BigWigs packager settings: https://github.com/BigWigsMods/packager/wiki
+package-as: Lookout
+
+# The addon lives in addon/Lookout; ship only that folder.
+move-folders:
+  Lookout/addon/Lookout: Lookout
+
+ignore:
+  - companion
+  - tests
+  - install.py
+  - pytest.ini
+  - requirements.txt
+  - start-companion.cmd
+  - config.example.json
+  - README.md

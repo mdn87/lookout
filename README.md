@@ -42,6 +42,22 @@ Alert kinds: `whisper`, `seen`, `keyword`, `invite`, `queue`, `readycheck`, `afk
 `.venv\Scripts\python -m pytest` loads the addon into Lua 5.1 against a stubbed game API and
 tests the companion's log reader.
 
+## Releasing
+
+`.pkgmeta` and `.github/workflows/release.yml` use the BigWigs packager. Bump `## Version` in
+`Lookout.toc`, then push a matching tag (`git tag v0.2.0 && git push origin v0.2.0`). The
+workflow builds `Lookout-v0.2.0.zip` with only the addon folder and attaches it to a GitHub
+release.
+
+CurseForge and Wago uploads start once both are set up:
+
+- **CurseForge:** add `## X-Curse-Project-ID: <id>` to `Lookout.toc` and a `CF_API_KEY`
+  repository secret (from curseforge.com/account/api-tokens).
+- **Wago:** add `## X-Wago-ID: <id>` to `Lookout.toc` and a `WAGO_API_TOKEN` repository secret
+  (from addons.wago.io/account/apikeys).
+
+The companion app isn't part of the addon zip.
+
 ## License
 
 None yet: all rights reserved by the author until one is chosen.
