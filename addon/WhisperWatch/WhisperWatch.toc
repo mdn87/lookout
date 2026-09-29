@@ -1,4 +1,0 @@
-## Interface: 16001
-## Title: WhisperWatch
-## Notes: Turns on chat logging and flags whispers from one player.
-WhisperWatch.lua

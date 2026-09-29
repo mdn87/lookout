@@ -1,3 +1,4 @@
 pushover.json
 __pycache__/
 .venv/
+config.json

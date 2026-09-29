@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: Lookout
+## Notes: Alerts for watched players, keywords, invites, queues and quests, a quest helper, and phone alerts through the Lookout companion.
+## Author: Matt
+## Version: 0.1.0
+## SavedVariables: LookoutDB
+## OptionalDeps: TomTom
+Core.lua
+Alerts.lua
+Quests.lua
+Integrations.lua

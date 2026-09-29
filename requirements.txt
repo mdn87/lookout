@@ -1,0 +1,5 @@
+pystray
+pillow
+# tests only
+lupa
+pytest
