@@ -74,7 +74,14 @@ def test_watcher_waits_for_a_log_that_does_not_exist_yet(tmp_path):
 
 
 def test_send_without_keys_says_so():
-    assert notify.send({}, chatlog.Signal("x", "test", "t")) == (False, "no Pushover keys in config.json")
+    sent, detail = notify.send({}, chatlog.Signal("x", "test", "t"))
+    assert not sent and detail.startswith("no Pushover keys yet")
+
+
+def test_send_treats_example_placeholders_as_missing():
+    placeholders = {"pushover": {"token": "your-pushover-application-token", "user": "your-pushover-user-key"}}
+    sent, detail = notify.send(placeholders, chatlog.Signal("x", "test", "t"))
+    assert not sent and detail.startswith("no Pushover keys yet")
 
 
 def test_tray_image_builds():
