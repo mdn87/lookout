@@ -79,7 +79,7 @@ def run_tray(config):
     icon = pystray.Icon("Lookout", idle, "Lookout")
 
     def deliver(signal):
-        sent, detail = notify.send(config, signal)
+        sent, detail = notify.send(notify.load_config(), signal)   # re-read so new keys apply without a restart
         icon.notify(signal.text[:200] + ("" if sent else f"\n(phone: {detail})"), notify.TITLES.get(signal.kind, "Lookout"))
 
     watcher = Watcher(config, deliver)
@@ -121,7 +121,7 @@ def run_tray(config):
 
 def run_console(config):
     def deliver(signal):
-        sent, detail = notify.send(config, signal)
+        sent, detail = notify.send(notify.load_config(), signal)   # re-read so new keys apply without a restart
         print(f"{signal.kind}: {signal.text}  [{detail}]", flush=True)
 
     watcher = Watcher(config, deliver)
