@@ -26,7 +26,7 @@ wait until it ends so the code doesn't cover your screen. `/lo rate` shows or ch
 limits.
 
 The older route, `/lo transport chat`, whispers each alert to yourself
-(`LOOKOUT :: <character> :: <kind> :: <text>`) for the companion to read from
+(`LOOKOUT :: CHARACTER :: KIND :: TEXT`) for the companion to read from
 `Logs/WoWChatLog.txt`. On Forever beta 1.60.1.70009 the game only writes that file at
 logout, so it can't deliver alerts during play there.
 
@@ -42,9 +42,9 @@ logout, so it can't deliver alerts during play there.
 
 | Command | Does |
 | --- | --- |
-| `/lo add <name>`, `/lo remove <name>`, `/lo names` | players to watch |
-| `/lo word add <text>`, `/lo word remove <text>`, `/lo words` | chat keywords |
-| `/lo alert <kind> phone\|screen\|off`, `/lo alerts` | where each kind of alert goes |
+| `/lo add NAME`, `/lo remove NAME`, `/lo names` | players to watch |
+| `/lo word add TEXT`, `/lo word remove TEXT`, `/lo words` | chat keywords |
+| `/lo alert KIND phone\|screen\|off`, `/lo alerts` | where each kind of alert goes |
 | `/lo phone on\|off`, `/lo hide on\|off`, `/lo test` | phone alerts, hiding the signal whispers, a test alert |
 | `/lo transport screenshot\|chat`, `/lo rate [seconds perHour]` | how phone alerts leave the game, screenshot limits |
 | `/lo quests`, `/lo way [questID]`, `/lo providers` | quest panel, waypoint, location sources |
@@ -58,7 +58,7 @@ draws its QR code into an image, and checks that the companion reads it back.
 
 ## Screenshot probe
 
-`/lo qrtest <code>` is the one-shot [screenshot probe](docs/screenshot-probe.md) that first
+`/lo qrtest CODE` is the one-shot [screenshot probe](docs/screenshot-probe.md) that first
 proved a screenshot reaches the phone without logging out.
 
 ## Releasing
@@ -72,7 +72,7 @@ release.
 release automation on, so it imports every new GitHub release by itself: the `-forever.zip` name
 and the packager's `release.json` tell it the game version. No Wago token or `X-Wago-ID` needed.
 
-**CurseForge** uploads start once it is set up: add `## X-Curse-Project-ID: <id>` to `Lookout.toc`
+**CurseForge** uploads start once it is set up: add `## X-Curse-Project-ID: 123456` to `Lookout.toc`
 and a `CF_API_KEY` repository secret (from authors.curseforge.com/#/settings/api-tokens).
 
 The companion app isn't part of the addon zip. Step-by-step account setup is in
