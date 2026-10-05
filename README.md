@@ -68,9 +68,9 @@ proved a screenshot reaches the phone without logging out.
 workflow builds `Lookout-v0.2.0-forever.zip` with only the addon folder and attaches it to a GitHub
 release.
 
-**Wago** (https://addons.wago.io/addons/lookout) is connected to this GitHub repository with
-release automation on, so it imports every new GitHub release by itself: the `-forever.zip` name
-and the packager's `release.json` tell it the game version. No Wago token or `X-Wago-ID` needed.
+**Wago** (https://addons.wago.io/addons/lookout) gets the same zip from the packager: `Lookout.toc`
+carries `## X-Wago-ID: 96EXEjNg` and the repository has a `WAGO_API_TOKEN` secret. The run log
+prints `Uploading ... to https://addons.wago.io/addons/96EXEjNg` followed by `Success!`.
 
 **CurseForge** uploads start once it is set up: add `## X-Curse-Project-ID: 123456` to `Lookout.toc`
 and a `CF_API_KEY` repository secret (from authors.curseforge.com/#/settings/api-tokens).

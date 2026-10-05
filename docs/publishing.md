@@ -38,19 +38,27 @@ them. If a button has a different name, look for the nearest match.
 5. Go to https://authors.curseforge.com/#/settings/api-tokens and generate a token named
    `lookout-github`. Copy it. It **is** secret, so don't paste it into chat.
 
-## 3. Wago (done 2026-10-04)
+## 3. Wago (done 2026-10-05)
 
-Wago is set up the easy way: https://addons.wago.io/addons/lookout is connected to the GitHub
-repository with **Releases Automation** on. Wago imports each new GitHub release on its own, so
-there is no Wago API key and no `X-Wago-ID` line to manage. Two things to keep true on the
-Wago **Settings > GitHub** page:
+The packager uploads to Wago directly. Three pieces make that work, and all three are in place:
 
-- The **Game Version** list has Classic Forever ticked. The zip is named `-forever.zip` and the
-  packager's `release.json` names the same version, which is how Wago sorts the file.
-- Leave **Always publish for latest game patch** off. The TOC's `## Interface:` line is correct
-  for the Forever beta, and this switch would make Wago ignore it.
+- `## X-Wago-ID: 96EXEjNg` in `addon/Lookout/Lookout.toc`. The ID is the project code shown on
+  the Wago **Settings > General** page; it isn't secret.
+- A repository secret named `WAGO_API_TOKEN` at https://github.com/mdn87/lookout/settings/secrets/actions,
+  made at https://addons.wago.io/account/apikeys. Only the release workflow can read it.
+- `Lookout.toc` has `## Interface: 16001`, which the packager turns into the Classic Forever patch
+  (`1.60.1` at the time of writing) on the Wago side.
 
-Releases made before the connection (v0.1.0) are not imported; the first automated one is v0.2.0.
+The first release that reached Wago this way was v0.2.2. Its run log shows
+`Uploading Lookout-v0.2.2-forever.zip (1.60.1 release) to https://addons.wago.io/addons/96EXEjNg`
+and then `Success!`; the file appeared on https://addons.wago.io/addons/lookout/versions within a
+minute.
+
+What did not work: the **Releases Automation** toggle on Wago's **Settings > GitHub** page. With it
+on, Wago imported nothing from v0.2.0 or v0.2.1, with or without the `X-Wago-ID` line. If it ever
+starts importing on its own, you'd see each release twice; turn the toggle off if that happens.
+Also, keep the Wago description import off: the firewall on the settings page rejects a
+description that contains text shaped like `<name>`.
 
 ## 4. Put the CurseForge token in GitHub
 
@@ -74,15 +82,14 @@ To do it yourself, add this line under `## X-License: MIT` in `addon/Lookout/Loo
 Then bump `## Version:`, commit, and push a matching tag:
 
 ```
-git tag v0.2.1
-git push origin master v0.2.1
+git tag v0.2.3
+git push origin master v0.2.3
 ```
 
 The run shows up at https://github.com/mdn87/lookout/actions. The upload worked when the log shows
 `Success!` after an upload to CurseForge. If CurseForge rejects the game version, the beta may not
-be on its version list yet. That's a CurseForge limit, and the GitHub release still goes out. Wago
-picks the release up from GitHub a few minutes later; check
-https://addons.wago.io/addons/lookout/versions.
+be on its version list yet. That's a CurseForge limit, and the GitHub release still goes out. The
+Wago upload is a separate step in the same run; check https://addons.wago.io/addons/lookout/versions.
 
 ## 6. Optional: start the tray app with Windows
 
