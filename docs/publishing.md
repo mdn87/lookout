@@ -54,9 +54,12 @@ The first release that reached Wago this way was v0.2.2. Its run log shows
 and then `Success!`; the file appeared on https://addons.wago.io/addons/lookout/versions within a
 minute.
 
-What did not work: the **Releases Automation** toggle on Wago's **Settings > GitHub** page. With it
-on, Wago imported nothing from v0.2.0 or v0.2.1, with or without the `X-Wago-ID` line. If it ever
-starts importing on its own, you'd see each release twice; turn the toggle off if that happens.
+The other route, Wago's **Releases Automation** toggle on its **Settings > GitHub** page, needs a
+GitHub webhook pointed at `https://addons.wago.io/api/github/webhook` as well; the toggle alone
+imported nothing from v0.2.0 or v0.2.1. That webhook exists on the repository (hook id 692271143,
+events `push` and `release`) but is **deactivated** on purpose, because with both routes on every
+release would reach Wago twice. Leave it off while the packager route is in use. If you ever
+switch, re-activate the hook and delete the `WAGO_API_TOKEN` secret, keeping the `X-Wago-ID` line.
 Also, keep the Wago description import off: the firewall on the settings page rejects a
 description that contains text shaped like `<name>`.
 
