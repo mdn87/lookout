@@ -75,6 +75,13 @@ C_Timer = { After = function(delay, fn)
 end }
 
 function UnitName() return "Yizzity" end
+function UnitLevel() return 23 end
+function UnitClass() return "Mage" end
+function UnitFactionGroup() return "Horde" end
+function GetRealmName() return "Whitemane" end
+function GetZoneText() return "The Barrens" end
+function GetSubZoneText() return "The Crossroads" end
+function GetZonePVPInfo() return "contested" end
 function UnitIsAFK() return T.afk end
 function InCombatLockdown() return T.combat end
 function GetTime() return T.now end

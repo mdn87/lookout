@@ -1,4 +1,6 @@
-from companion import chatlog, notify
+import json
+
+from companion import assistant, chatlog, notify
 from companion.app import Watcher
 
 SELF_IN = "9/28 20:10:06.612  [Yizzity] whispers: LOOKOUT :: Yizzity :: whisper :: Saalora-Zephras: hi"
@@ -96,3 +98,81 @@ def test_one_push_carries_a_batch_and_buzzes_for_urgent_kinds():
         [chatlog.Signal("Yizzity", "whisper", "Bob: hi"), chatlog.Signal("Yizzity", "queue", "Dungeon ready")], dropped=3)
     assert title == "2 alerts (Yizzity)" and priority == 1
     assert message.splitlines() == ["Whisper: Bob: hi", "Queue ready: Dungeon ready", "(+3 older alerts dropped by the rate limit)"]
+
+
+class FakeReply:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def read(self):
+        return json.dumps(self.payload).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+
+def test_assistant_needs_an_endpoint_and_a_model():
+    text, detail = assistant.ask({}, "where am I", environ={})
+    assert text is None and detail.startswith("no assistant yet")
+
+
+def test_assistant_posts_the_question_and_returns_the_answer():
+    seen = {}
+
+    def opener(request, timeout):
+        seen["url"] = request.full_url
+        seen["auth"] = request.get_header("Authorization")
+        seen["body"] = json.loads(request.data)
+        seen["timeout"] = timeout
+        return FakeReply({"choices": [{"message": {"content": "  Type /script print(GetRealmName())  "}}]})
+
+    config = {"assistant": {"url": "http://gw/v1/", "key": "k", "model": "m", "timeout": 7}}
+    text, detail = assistant.ask(config, "which realm? [Yizzity, Whitemane]", opener=opener, environ={})
+    assert text == "Type /script print(GetRealmName())" and detail == "m answered"
+    assert seen["url"] == "http://gw/v1/chat/completions" and seen["auth"] == "Bearer k" and seen["timeout"] == 7
+    assert seen["body"]["model"] == "m" and seen["body"]["messages"][1]["content"] == "which realm? [Yizzity, Whitemane]"
+
+
+def test_assistant_falls_back_to_the_environment():
+    env = {"OMNIROUTE_BASE_URL": "http://gw/v1", "OMNIROUTE_API_KEY": "k", "LOOKOUT_AI_MODEL": "m"}
+    assert assistant.settings({}, env) == ("http://gw/v1", "k", "m", 60)
+    assert assistant.settings({"assistant": {"url": "http://mine"}}, env)[0] == "http://mine"
+
+
+def test_assistant_reports_a_rejection_and_a_dead_endpoint():
+    import io
+    import urllib.error
+
+    def rejects(request, timeout):
+        raise urllib.error.HTTPError(request.full_url, 403, "Forbidden", {}, io.BytesIO(b'{"error": {"message": "key not allowed"}}'))
+
+    def dead(request, timeout):
+        raise OSError("connection refused")
+
+    config = {"assistant": {"url": "http://gw/v1", "model": "m"}}
+    assert assistant.ask(config, "q", opener=rejects, environ={}) == (None, "assistant rejected the question (403): key not allowed")
+    assert assistant.ask(config, "q", opener=dead, environ={}) == (None, "assistant request failed: connection refused")
+
+
+def test_answer_delivers_the_reply_as_an_alert(monkeypatch):
+    from companion import app
+    pushed, shown = [], []
+    monkeypatch.setattr(notify, "send", lambda config, *signals, dropped=0: (pushed.append(signals) or True, "ok"))
+    question = chatlog.Signal("Yizzity", "help", "which realm? [..]")
+    app.answer(question, lambda signals, sent, detail: shown.append((signals, sent, detail)),
+               config_loader=dict, ask=lambda config, text: ("Use /script print(GetRealmName())", "m answered"))
+    reply = chatlog.Signal("Yizzity", "answer", "Use /script print(GetRealmName())")
+    assert pushed == [(reply,)] and shown == [([reply], True, "ok")]
+
+    app.answer(question, lambda signals, sent, detail: shown.append(signals[0].text),
+               config_loader=dict, ask=lambda config, text: (None, "assistant request failed: x"))
+    assert shown[-1] == "No answer. assistant request failed: x"
+
+
+def test_questions_are_split_from_ordinary_alerts():
+    from companion.app import split_questions
+    q, w = chatlog.Signal("Y", "help", "?"), chatlog.Signal("Y", "whisper", "hi")
+    assert split_questions([w, q]) == ([q], [w])

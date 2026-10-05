@@ -48,8 +48,21 @@ logout, so it can't deliver alerts during play there.
 | `/lo phone on\|off`, `/lo hide on\|off`, `/lo test` | phone alerts, hiding the signal whispers, a test alert |
 | `/lo transport screenshot\|chat`, `/lo rate [seconds perHour]` | how phone alerts leave the game, screenshot limits |
 | `/lo quests`, `/lo way [questID]`, `/lo providers` | quest panel, waypoint, location sources |
+| `/lo help QUESTION` | ask the companion's assistant; the answer arrives as a phone alert |
 
 Alert kinds: `whisper`, `seen`, `keyword`, `invite`, `queue`, `readycheck`, `afk`, `quest`, `test`.
+
+## Asking the assistant
+
+`/lo help how do I see which realm I'm on?` sends the question to the companion the same way an
+alert goes out, with your character's level, class, faction, realm and zone appended in square
+brackets. The companion asks an OpenAI-compatible chat endpoint and pushes the answer to your
+phone as a `Lookout answer` alert (and a tray notification). Settings live in the `assistant`
+block of `config.json`: `url` is the API base (`.../v1`), `model` the model name, `key` optional.
+`url` and `key` fall back to the `LOOKOUT_AI_URL` / `LOOKOUT_AI_KEY` environment variables,
+then `OMNIROUTE_BASE_URL` / `OMNIROUTE_API_KEY`; `model` falls back to `LOOKOUT_AI_MODEL`.
+`python -m companion.app --ask "..."` tries it from a terminal. Questions are rate limited like
+any other phone alert, and the answer usually takes ten seconds or so.
 
 ## Tests
 

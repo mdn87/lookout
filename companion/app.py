@@ -4,6 +4,7 @@ log) and sends them to your phone.
     pythonw -m companion.app            tray icon (start-companion.cmd does this)
     python -m companion.app --console   print alerts in a terminal instead, no tray
     python -m companion.app --test-push send one test alert to your phone and exit
+    python -m companion.app --ask "..." ask the assistant one question, push the answer, exit
 """
 import argparse
 import os
@@ -11,7 +12,29 @@ import threading
 import time
 from pathlib import Path
 
-from . import chatlog, notify
+from . import assistant, chatlog, notify
+
+
+def answer(question, show, config_loader=notify.load_config, ask=assistant.ask):
+    """Ask the assistant one "help" question and deliver the reply like any other alert.
+    show(signals, sent, detail) presents it locally. Runs on its own thread, since an answer
+    can take a minute and the watcher must keep reading screenshots meanwhile."""
+    config = config_loader()
+    text, detail = ask(config, question.text)
+    reply = chatlog.Signal(question.char, "answer", text or f"No answer. {detail}")
+    sent, detail = notify.send(config, reply)
+    show([reply], sent, detail)
+
+
+def split_questions(signals):
+    """(questions, the rest): "help" alerts go to the assistant instead of straight to the phone."""
+    questions = [s for s in signals if s.kind == "help"]
+    return questions, [s for s in signals if s.kind != "help"]
+
+
+def start_answers(questions, show):
+    for question in questions:
+        threading.Thread(target=answer, args=(question, show), daemon=True).start()
 
 
 class Watcher:
@@ -113,10 +136,17 @@ def run_tray(config):
     idle = make_icon_image((120, 120, 120, 255))
     icon = pystray.Icon("Lookout", idle, "Lookout")
 
-    def deliver(signals, dropped=0):
-        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
+    def show(signals, sent, detail, dropped=0):
         title, message, _ = notify.compose(signals, dropped)
         icon.notify(message[:200] + ("" if sent else f"\n(phone: {detail})"), title)
+
+    def deliver(signals, dropped=0):
+        questions, signals = split_questions(signals)
+        start_answers(questions, show)
+        if not signals:
+            return
+        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
+        show(signals, sent, detail, dropped)
 
     watcher = Watcher(config, deliver)
 
@@ -156,11 +186,18 @@ def run_tray(config):
 
 
 def run_console(config):
-    def deliver(signals, dropped=0):
-        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
+    def show(signals, sent, detail):
         for signal in signals:
             print(f"{signal.kind}: {signal.text}", flush=True)
         print(f"  [{detail}]", flush=True)
+
+    def deliver(signals, dropped=0):
+        questions, signals = split_questions(signals)
+        start_answers(questions, show)
+        if not signals:
+            return
+        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
+        show(signals, sent, detail)
 
     watcher = Watcher(config, deliver)
     shown = None
@@ -179,12 +216,22 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Lookout companion")
     parser.add_argument("--console", action="store_true", help="print alerts in a terminal, no tray icon")
     parser.add_argument("--test-push", action="store_true", help="send one test alert to your phone and exit")
+    parser.add_argument("--ask", metavar="QUESTION", help="ask the assistant one question, push the answer, and exit")
     args = parser.parse_args(argv)
     config = notify.load_config()
     if args.test_push:
         sent, detail = notify.send(config, chatlog.Signal("companion", "test", "Phone alerts from the Lookout companion work."))
         print(detail)
         return 0 if sent else 1
+    if args.ask:
+        outcome = {}
+
+        def show(signals, sent, detail):
+            print(f"{signals[0].text}\n  [{detail}]")
+            outcome["sent"] = sent
+
+        answer(chatlog.Signal("companion", "help", args.ask), show)
+        return 0 if outcome.get("sent") else 1
     if args.console:
         run_console(config)
     else:

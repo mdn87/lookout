@@ -11,7 +11,7 @@ CONFIG = ROOT / "config.json"
 TITLES = {
     "whisper": "Whisper", "seen": "Player online", "keyword": "Keyword", "invite": "Group invite",
     "queue": "Queue ready", "readycheck": "Ready check", "afk": "While you were away",
-    "quest": "Quest", "test": "Lookout test",
+    "quest": "Quest", "test": "Lookout test", "help": "Question", "answer": "Lookout answer",
 }
 URGENT = {"queue", "readycheck", "invite"}   # these time out in game, so they buzz harder
 

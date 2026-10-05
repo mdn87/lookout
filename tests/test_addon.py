@@ -236,3 +236,27 @@ def test_other_addons_can_add_a_location_source(game):
     """)
     T.slash("way 9")
     assert "from mydata" in T.printed[len(T.printed)]
+
+
+def test_help_sends_the_question_with_the_characters_whereabouts(game):
+    lua, T = game
+    T.slash("help how do I see which realm I am on?")
+    assert signals(T) == [
+        "LOOKOUT :: Yizzity :: help :: how do I see which realm I am on? "
+        "[Yizzity lvl 23 Mage, Horde, Whitemane, The Barrens (The Crossroads), contested]"
+    ]
+    assert "answer goes to your phone" in T.printed[len(T.printed)]
+
+
+def test_help_survives_a_client_without_zone_functions(game):
+    lua, T = game
+    lua.execute("GetZonePVPInfo = nil; GetSubZoneText = nil")
+    T.slash("help where am I")
+    assert signals(T) == ["LOOKOUT :: Yizzity :: help :: where am I [Yizzity lvl 23 Mage, Horde, Whitemane, The Barrens]"]
+
+
+def test_help_alone_prints_the_command_list(game):
+    lua, T = game
+    T.slash("help")
+    assert signals(T) == []
+    assert any("/lo help" in T.printed[i] for i in range(1, len(T.printed) + 1))
