@@ -38,47 +38,51 @@ them. If a button has a different name, look for the nearest match.
 5. Go to https://authors.curseforge.com/#/settings/api-tokens and generate a token named
    `lookout-github`. Copy it. It **is** secret, so don't paste it into chat.
 
-## 3. Wago
+## 3. Wago (done 2026-10-04)
 
-1. Go to https://addons.wago.io and sign in.
-2. Open the developer dashboard and create an addon named `Lookout`.
-3. The dashboard shows the addon's **Wago ID**, a short code like `he54k6bL`. Write it down; it
-   isn't secret.
-4. Go to https://addons.wago.io/account/apikeys, create a key, and copy it. It **is** secret.
+Wago is set up the easy way: https://addons.wago.io/addons/lookout is connected to the GitHub
+repository with **Releases Automation** on. Wago imports each new GitHub release on its own, so
+there is no Wago API key and no `X-Wago-ID` line to manage. Two things to keep true on the
+Wago **Settings > GitHub** page:
 
-## 4. Put the two tokens in GitHub
+- The **Game Version** list has Classic Forever ticked. The zip is named `-forever.zip` and the
+  packager's `release.json` names the same version, which is how Wago sorts the file.
+- Leave **Always publish for latest game patch** off. The TOC's `## Interface:` line is correct
+  for the Forever beta, and this switch would make Wago ignore it.
+
+Releases made before the connection (v0.1.0) are not imported; the first automated one is v0.2.0.
+
+## 4. Put the CurseForge token in GitHub
 
 1. Open https://github.com/mdn87/lookout/settings/secrets/actions.
 2. Click **New repository secret**. Set the name to `CF_API_KEY`, paste the CurseForge token as
    the value, and click **Add secret**.
-3. Do the same with the name `WAGO_API_TOKEN` and the Wago key.
 
 GitHub never shows a secret again after you save it. Only the release workflow can read it.
 
-## 5. Add the IDs and release
+## 5. Add the CurseForge ID and release
 
-Send Claude the CurseForge Project ID and the Wago ID; they're public anyway. Claude adds them to
-`Lookout.toc`, bumps the version, and pushes a tag.
+Send Claude the CurseForge Project ID; it's public anyway. Claude adds it to `Lookout.toc`, bumps
+the version, and pushes a tag.
 
-To do it yourself, add these two lines under `## X-License: MIT` in
-`addon/Lookout/Lookout.toc`:
+To do it yourself, add this line under `## X-License: MIT` in `addon/Lookout/Lookout.toc`:
 
 ```
 ## X-Curse-Project-ID: 123456
-## X-Wago-ID: abcd1234
 ```
 
-Then change `## Version:` to `0.1.1`, commit, and run:
+Then bump `## Version:`, commit, and push a matching tag:
 
 ```
-git tag v0.1.1
-git push origin master v0.1.1
+git tag v0.2.1
+git push origin master v0.2.1
 ```
 
 The run shows up at https://github.com/mdn87/lookout/actions. The upload worked when the log shows
-`Success!` after an upload to CurseForge and to Wago. If CurseForge rejects the game version,
-the beta may not be on its version list yet. That's a CurseForge limit, and the GitHub release
-still goes out.
+`Success!` after an upload to CurseForge. If CurseForge rejects the game version, the beta may not
+be on its version list yet. That's a CurseForge limit, and the GitHub release still goes out. Wago
+picks the release up from GitHub a few minutes later; check
+https://addons.wago.io/addons/lookout/versions.
 
 ## 6. Optional: start the tray app with Windows
 
