@@ -2,7 +2,7 @@
 ## Title: Lookout
 ## Notes: Alerts for watched players, keywords, invites, queues and quests, a quest helper, and phone alerts through the Lookout companion.
 ## Author: Matt
-## Version: 0.2.1
+## Version: 0.2.2
 ## SavedVariables: LookoutDB
 ## OptionalDeps: TomTom
 ## X-License: MIT
