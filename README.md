@@ -69,6 +69,10 @@ any other phone alert, and the answer usually takes ten seconds or so.
 `.venv\Scripts\python -m pytest` loads the addon into Lua 5.1 against a stubbed game API,
 draws its QR code into an image, and checks that the companion reads it back.
 
+The [gameplay alert reliability assessment](docs/alert-reliability.md) records the
+current milestone, known delivery gaps, and acceptance checks. Failed phone sends
+are not retried yet, and their screenshots are deleted by default.
+
 ## Screenshot probe
 
 `/lo qrtest CODE` is the one-shot [screenshot probe](docs/screenshot-probe.md) that first

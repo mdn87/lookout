@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "projectId": "lookout",
+  "projectLabel": "Lookout",
+  "chips": [
+    {
+      "schemaVersion": 1,
+      "chipId": "lookout-alert-reliability-assessment",
+      "projectId": "lookout",
+      "title": "Assess gameplay alert reliability",
+      "summary": "Verify the existing alert tests, examine failed delivery and restart behavior, and define acceptance checks for reliable phone alerts.",
+      "stage": "done",
+      "sequence": 1,
+      "prereqs": [],
+      "linkedRunIds": [],
+      "confidence": "authoritative",
+      "timestamps": {
+        "createdAt": "2026-10-07T02:55:33Z",
+        "updatedAt": "2026-10-07T02:56:50Z"
+      },
+      "evidence": [
+        {
+          "entryId": "reliability-created",
+          "at": "2026-10-07T02:55:33Z",
+          "kind": "created",
+          "message": "Repository review found automated screenshot delivery already implemented; assess reliability before choosing further implementation."
+        },
+        {
+          "entryId": "reliability-active",
+          "at": "2026-10-07T02:55:43Z",
+          "kind": "stage-change",
+          "message": "Both board files passed the Dias parsers before work began; now verifying tests and delivery failure behavior."
+        },
+        {
+          "entryId": "reliability-results",
+          "at": "2026-10-07T02:56:50Z",
+          "kind": "note",
+          "message": "All 54 tests passed. Controlled checks confirmed failed-send deletion, pause discard, missing restart recovery, and duplicate screenshot delivery."
+        },
+        {
+          "entryId": "reliability-done",
+          "at": "2026-10-07T02:56:50Z",
+          "kind": "stage-change",
+          "message": "Assessment completed with documented causes, recovery scope, and automated plus live acceptance checks. No completion percentage inferred."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "chipId": "lookout-recover-failed-alerts",
+      "projectId": "lookout",
+      "title": "Preserve alerts until delivery succeeds",
+      "summary": "Make pending alerts recoverable across failed sends, pause, and restarts; bound retries and prevent duplicate delivery of completed work.",
+      "stage": "ready",
+      "sequence": 2,
+      "prereqs": [
+        "lookout-alert-reliability-assessment"
+      ],
+      "linkedRunIds": [],
+      "confidence": "reported",
+      "timestamps": {
+        "createdAt": "2026-10-07T02:56:50Z",
+        "updatedAt": "2026-10-07T02:56:50Z"
+      },
+      "evidence": [
+        {
+          "entryId": "recovery-created",
+          "at": "2026-10-07T02:56:50Z",
+          "kind": "created",
+          "message": "Reliability assessment found screenshots deleted after failed sends. Implement delivery outcomes and recovery before further live acceptance testing."
+        }
+      ]
+    }
+  ]
+}

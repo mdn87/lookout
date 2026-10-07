@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "projectId": "lookout",
+  "projectLabel": "Lookout",
+  "assessmentState": "watchlist",
+  "assessmentScope": "current-milestone",
+  "percentComplete": null,
+  "milestonePhase": "build-and-validate",
+  "portfolioGroup": "games",
+  "displayPriority": 300,
+  "assessedAt": "2026-10-07T02:56:50Z",
+  "confidence": "authoritative",
+  "currentMilestone": "Reliable phone alerts during gameplay, with explicit delivery failure handling and verified screenshot behavior.",
+  "remainingSummary": "Implement failed-send recovery, pause handling, and duplicate suppression; then verify foreground, background, and minimized phone delivery.",
+  "nextChipId": "lookout-recover-failed-alerts",
+  "source": {
+    "label": "Reliability assessment: 54 passing tests, four controlled observations, and documented acceptance checks; no numeric estimate yet",
+    "updatedAt": "2026-10-07"
+  }
+}
