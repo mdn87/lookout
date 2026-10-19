@@ -1,5 +1,6 @@
 """Settings and Pushover delivery."""
 import json
+import os
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -27,7 +28,7 @@ def load_config(path=CONFIG):
 
 def pushover_keys(config):
     keys = config.get("pushover") or {}
-    return keys.get("token"), keys.get("user")
+    return os.environ.get("PUSHOVER_TOKEN") or keys.get("token"), os.environ.get("PUSHOVER_USER") or keys.get("user")
 
 
 def compose(signals, dropped=0):

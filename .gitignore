@@ -4,3 +4,4 @@ __pycache__/
 config.json
 .Codex/handoff.md
 .Codex/handoff-history/
+/config/glas.local.json

@@ -99,3 +99,12 @@ The companion app isn't part of the addon zip. Step-by-step account setup is in
 
 MIT. See [LICENSE](LICENSE). The vendored Lua QR encoder retains its BSD-3-Clause
 license; see [vendor attribution](addon/Lookout/vendor/README.md).
+
+## Local Bitwarden launch
+
+`scripts/with-glas.py` launches this application using the ignored reference manifest
+`config/glas.local.json` and the sibling Glas checkout. Run it with the application
+Python interpreter; normal arguments go to the application. Use `--exec` followed
+by an explicit trusted command for an alternate entry point. Secret values are
+fetched only into the child environment; no `.env` file is generated. Existing
+local configuration remains the fallback for launches outside this wrapper.

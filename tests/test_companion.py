@@ -7,6 +7,13 @@ SELF_IN = "9/28 20:10:06.612  [Yizzity] whispers: LOOKOUT :: Yizzity :: whisper 
 SELF_OUT = "9/28 20:10:06.612  To [Yizzity]: LOOKOUT :: Yizzity :: whisper :: Saalora-Zephras: hi"
 
 
+def test_injected_pushover_keys_override_json_and_work_without_saved_keys(monkeypatch):
+    monkeypatch.setenv("PUSHOVER_TOKEN", "synthetic-injected-token")
+    monkeypatch.setenv("PUSHOVER_USER", "synthetic-injected-user")
+    assert notify.pushover_keys({}) == ("synthetic-injected-token", "synthetic-injected-user")
+    assert notify.pushover_keys({"pushover":{"token":"old","user":"old"}}) == ("synthetic-injected-token", "synthetic-injected-user")
+
+
 def test_parse_signal_lines_only():
     assert chatlog.parse(SELF_IN) == chatlog.Signal("Yizzity", "whisper", "Saalora-Zephras: hi")
     assert chatlog.parse(SELF_OUT) == chatlog.parse(SELF_IN)
