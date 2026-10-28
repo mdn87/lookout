@@ -62,7 +62,7 @@ def test_watcher_delivers_once_and_respects_pause(tmp_path):
     log = tmp_path / "WoWChatLog.txt"
     log.write_text("", encoding="utf-8")
     got = []
-    watcher = Watcher({"chat_log": str(log), "screenshot_dirs": []}, lambda signals, dropped=0: got.extend(signals))
+    watcher = Watcher({"chat_log": str(log), "screenshot_dirs": []}, lambda signals, dropped=0: (got.extend(signals) or True, "ok"))
     watcher.step()
     assert watcher.status == "watching"
     with log.open("a", encoding="utf-8") as handle:

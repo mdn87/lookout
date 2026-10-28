@@ -15,8 +15,8 @@ A World of Warcraft addon plus a small Windows tray app.
 Addons can't reach the network or write files while you play, but they can take a
 screenshot. For each phone alert the addon draws a QR code in the bottom-left corner for
 about a second and takes a screenshot. The companion watches the game's `Screenshots`
-folder, reads the code, sends the push through Pushover, and deletes that screenshot.
-Your own screenshots are left alone.
+folder, reads the code, sends the push through Pushover, and deletes that screenshot once
+Pushover has accepted the push. Your own screenshots are left alone.
 
 Screenshots are rate limited: at most one every 20 seconds (5 for group invites, queue pops
 and ready checks) and 30 an hour. Alerts raised in between go out together in the next
@@ -24,6 +24,12 @@ screenshot, as one push. If more than 20 pile up, the oldest ordinary ones are d
 the next push says how many. During a fight you're at the keyboard for, ordinary alerts
 wait until it ends so the code doesn't cover your screen. `/lo rate` shows or changes the
 limits.
+
+When a push fails, the companion saves the alert in `%LOCALAPPDATA%\Lookout\pending-alerts.json`,
+leaves its screenshot in place, and tries again 10 seconds, 1 minute, 5 minutes and 15 minutes
+later, also after a companion restart. After five failed tries it gives up, says so (a tray
+notification, or a line in the console), and keeps the screenshot. Retries wait while alerts
+are paused. Alerts that arrive while paused are still dropped.
 
 The older route, `/lo transport chat`, whispers each alert to yourself
 (`LOOKOUT :: CHARACTER :: KIND :: TEXT`) for the companion to read from
@@ -70,8 +76,9 @@ any other phone alert, and the answer usually takes ten seconds or so.
 draws its QR code into an image, and checks that the companion reads it back.
 
 The [gameplay alert reliability assessment](docs/alert-reliability.md) records the
-current milestone, known delivery gaps, and acceptance checks. Failed phone sends
-are not retried yet, and their screenshots are deleted by default.
+current milestone, known delivery gaps, and acceptance checks. Failed sends are retried
+now. Still open: holding alerts through a pause, expiring stale invites and queue pops,
+ignoring duplicate screenshots, and retrying a failed assistant answer.
 
 ## Screenshot probe
 

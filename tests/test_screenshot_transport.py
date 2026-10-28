@@ -215,7 +215,7 @@ def test_watcher_sends_and_deletes_lookout_screenshots_only(tmp_path):
     old = qr_image("LOOKOUT-2 1\nYizzity\nwhisper\told", tmp_path / "WoWScrnShot_0.jpg")
     got = []
     watcher = Watcher({"chat_log": str(tmp_path / "none.txt"), "screenshot_dirs": [str(tmp_path)]},
-                      lambda signals, dropped=0: got.append(([s.text for s in signals], dropped)))
+                      lambda signals, dropped=0: (got.append(([s.text for s in signals], dropped)) or True, "ok"))
     watcher.step()
     assert watcher.status == "watching" and got == []
     mine = qr_image("LOOKOUT-2 2\nYizzity\nqueue\tDungeon ready\ndropped\t1", tmp_path / "WoWScrnShot_1.jpg")
@@ -232,7 +232,7 @@ def test_watcher_waits_for_a_screenshot_still_being_written(tmp_path):
     shots_dir = tmp_path / "Screenshots"
     got = []
     watcher = Watcher({"chat_log": str(tmp_path / "none.txt"), "screenshot_dirs": [str(shots_dir)],
-                       "keep_screenshots": True}, lambda signals, dropped=0: got.extend(signals))
+                       "keep_screenshots": True}, lambda signals, dropped=0: (got.extend(signals) or True, "ok"))
     watcher.step()                             # the folder doesn't exist until the first screenshot
     shots_dir.mkdir()
     path = shots_dir / "WoWScrnShot_3.jpg"
