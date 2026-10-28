@@ -8,13 +8,13 @@
   "milestonePhase": "build-and-validate",
   "portfolioGroup": "games",
   "displayPriority": 300,
-  "assessedAt": "2026-10-07T02:56:50Z",
+  "assessedAt": "2026-10-28T04:35:00Z",
   "confidence": "authoritative",
   "currentMilestone": "Reliable phone alerts during gameplay, with explicit delivery failure handling and verified screenshot behavior.",
-  "remainingSummary": "Implement failed-send recovery, pause handling, and duplicate suppression; then verify foreground, background, and minimized phone delivery.",
+  "remainingSummary": "Failed-send recovery's first slice landed (durable outbox, 5 tries). Remaining: hold alerts while paused, expire stale invites, suppress duplicates; then verify foreground, background, and minimized phone delivery.",
   "nextChipId": "lookout-recover-failed-alerts",
   "source": {
-    "label": "Reliability assessment: 54 passing tests, four controlled observations, and documented acceptance checks; no numeric estimate yet",
-    "updatedAt": "2026-10-07"
+    "label": "First alert-recovery slice merged 2026-10-28 (PR #1): 64 passing mock tests; live phone acceptance not yet run",
+    "updatedAt": "2026-10-28"
   }
 }
