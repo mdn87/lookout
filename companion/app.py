@@ -7,12 +7,16 @@ log) and sends them to your phone.
     python -m companion.app --ask "..." ask the assistant one question, push the answer, exit
 """
 import argparse
+import logging
 import os
 import threading
 import time
 from pathlib import Path
 
 from . import assistant, chatlog, notify
+from .outbox import ATTEMPTS, Outbox, default_path
+
+log = logging.getLogger("lookout")
 
 
 def answer(question, show, config_loader=notify.load_config, ask=assistant.ask):
@@ -37,12 +41,42 @@ def start_answers(questions, show):
         threading.Thread(target=answer, args=(question, show), daemon=True).start()
 
 
+def deliverer(show):
+    """deliver(signals, dropped, retry) for the Watcher: questions go to the assistant, the other
+    alerts to the phone as one push. Returns (sent, detail); sent once Pushover accepted the push,
+    or when there was nothing to push. show(signals, sent, detail, dropped) presents the result,
+    except for a retry that failed again."""
+    def deliver(signals, dropped=0, retry=False):
+        questions, signals = split_questions(signals)
+        start_answers(questions, show)
+        if not signals:
+            return True, "question passed to the assistant"
+        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
+        if sent or not retry:
+            show(signals, sent, detail, dropped)
+        return sent, detail
+    return deliver
+
+
+class Toast(logging.Handler):
+    """Shows warnings, such as an alert given up on, as tray notifications."""
+
+    def __init__(self, icon):
+        super().__init__(logging.WARNING)
+        self.icon = icon
+
+    def emit(self, record):
+        self.icon.notify(record.getMessage()[:250], "Lookout")
+
+
 class Watcher:
     """Polls the Screenshots folders and the chat log on a thread and hands each batch of new
-    alerts to deliver(signals, dropped)."""
+    alerts to deliver(signals, dropped, retry=False), which returns (sent, detail). A batch the
+    phone didn't take waits in the outbox, with its screenshot, and is tried again later."""
 
-    def __init__(self, config, deliver, poll=1.0):
+    def __init__(self, config, deliver, poll=1.0, outbox=None):
         self.config, self.deliver, self.poll = config, deliver, poll
+        self.outbox = outbox if outbox is not None else Outbox()   # kept in memory without a file
         self.paused = False
         self.status = "starting"
         self.last = "nothing yet"
@@ -58,15 +92,59 @@ class Watcher:
         logs = chatlog.find_chat_logs()
         return logs[0] if logs else None
 
-    def hand_over(self, signals, dropped=0):
+    def hand_over(self, signals, dropped=0, screenshot=None):
         first = signals[0]
         more = f" (+{len(signals) - 1})" if len(signals) > 1 else ""
         self.last = f"{time.strftime('%H:%M')} {first.kind}: {first.text[:60]}{more}"
-        if not self.paused:
-            self.deliver(signals, dropped)
+        if self.paused:   # pause still drops new alerts; holding them is a later step
+            self.forget(screenshot)
+            return
+        # Saved before the first send. Questions go to deliver on this try only: a retry carries
+        # just the ordinary alerts, so it never asks the assistant twice.
+        _, alerts = split_questions(signals)
+        entry = self.outbox.add(alerts, dropped, screenshot) if alerts else None
+        sent, detail = self.deliver(signals, dropped)
+        if entry:
+            self.settle(entry, sent, detail)
+        else:   # only questions: the assistant pushes its answers itself
+            self.forget(screenshot)
+
+    def settle(self, entry, sent, detail):
+        """Act on one delivery outcome. A delivered batch leaves the outbox before its screenshot
+        is deleted, so a crash in between can't send it twice. A failed one keeps both."""
+        title = notify.compose(entry.signals, entry.dropped)[0]
+        if sent:
+            if entry.attempts:
+                log.info("%s delivered on try %d", title, entry.attempts + 1)
+            self.outbox.delivered(entry)
+            self.forget(entry.screenshot)
+            return
+        wait = self.outbox.failed(entry, detail)
+        if wait is None:
+            kept = f"; its screenshot is kept at {entry.screenshot}" if entry.screenshot else ""
+            log.warning("Gave up on %s after %d tries: %s%s", title, entry.attempts, detail, kept)
+        else:
+            log.info("%s not delivered (%s); try %d of %d in %d s", title, detail, entry.attempts + 1, ATTEMPTS, wait)
+
+    def forget(self, screenshot):
+        """Delete a handled Lookout screenshot, unless keep_screenshots."""
+        if screenshot and not self.config.get("keep_screenshots"):
+            try:
+                Path(screenshot).unlink()
+            except OSError:
+                pass
+
+    def step_retries(self):
+        """Send the longest-waiting due batch again. One per poll, so a dead network holds up the
+        other sources for one timeout at most; nothing goes out while paused."""
+        entry = None if self.paused else self.outbox.next_due()
+        if entry:
+            sent, detail = self.deliver(list(entry.signals), entry.dropped, retry=True)
+            self.settle(entry, sent, detail)
 
     def step_screenshots(self):
-        """Read new screenshots; a decoded Lookout screenshot is deleted unless keep_screenshots."""
+        """Read new screenshots. A decoded Lookout screenshot is deleted once its alerts are
+        delivered, unless keep_screenshots."""
         from . import screenshots   # needs zxing-cpp, which the chat-log route doesn't
         if self.folders is None:
             dirs = self.config.get("screenshot_dirs")
@@ -74,14 +152,8 @@ class Watcher:
             self.folders = [screenshots.Folder(d) for d in dirs]
         for folder in self.folders:
             for path, shot in folder.poll():
-                if not shot:
-                    continue
-                self.hand_over(list(shot.signals), shot.dropped)
-                if not self.config.get("keep_screenshots"):
-                    try:
-                        path.unlink()
-                    except OSError:
-                        pass
+                if shot:
+                    self.hand_over(list(shot.signals), shot.dropped, path)
         return bool(self.folders)
 
     def step_chat_log(self):
@@ -100,7 +172,8 @@ class Watcher:
         return None
 
     def step(self):
-        """One poll of every source."""
+        """One due retry, if any, then one poll of every source."""
+        self.step_retries()
         watching_shots = self.step_screenshots()
         problem = self.step_chat_log()
         if self.paused:
@@ -140,15 +213,9 @@ def run_tray(config):
         title, message, _ = notify.compose(signals, dropped)
         icon.notify(message[:200] + ("" if sent else f"\n(phone: {detail})"), title)
 
-    def deliver(signals, dropped=0):
-        questions, signals = split_questions(signals)
-        start_answers(questions, show)
-        if not signals:
-            return
-        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
-        show(signals, sent, detail, dropped)
-
-    watcher = Watcher(config, deliver)
+    log.addHandler(Toast(icon))
+    deliver = deliverer(show)
+    watcher = Watcher(config, deliver, outbox=Outbox(default_path()))
 
     def refresh():
         while not watcher.stopping.is_set():
@@ -186,20 +253,14 @@ def run_tray(config):
 
 
 def run_console(config):
-    def show(signals, sent, detail):
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    def show(signals, sent, detail, dropped=0):
         for signal in signals:
             print(f"{signal.kind}: {signal.text}", flush=True)
         print(f"  [{detail}]", flush=True)
 
-    def deliver(signals, dropped=0):
-        questions, signals = split_questions(signals)
-        start_answers(questions, show)
-        if not signals:
-            return
-        sent, detail = notify.send(notify.load_config(), *signals, dropped=dropped)   # re-read so new keys apply without a restart
-        show(signals, sent, detail)
-
-    watcher = Watcher(config, deliver)
+    watcher = Watcher(config, deliverer(show), outbox=Outbox(default_path()))
     shown = None
     try:
         while True:
