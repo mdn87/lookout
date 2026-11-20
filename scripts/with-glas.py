@@ -34,7 +34,8 @@ def main():
     if sources:
         env['PYTHONPATH']=os.pathsep.join(sources)
     command=[c[:-4] if os.name!='nt' and c in ('npm.cmd','pnpm.cmd') else c for c in command]
-    glas_python=os.environ.get('GLAS_PYTHON') or (str(glas/'.venv'/('Scripts/python.exe' if os.name=='nt' else 'bin/python')) if glas is not None else sys.executable)
+    source_python=glas/'.venv'/('Scripts/python.exe' if os.name=='nt' else 'bin/python') if glas is not None else None
+    glas_python=os.environ.get('GLAS_PYTHON') or (str(source_python) if source_python is not None and source_python.is_file() else sys.executable)
     return subprocess.call([glas_python,'-m','glas','run','--manifest',str(manifest),'--',*command],cwd=ROOT,env=env)
 
 if __name__=='__main__':

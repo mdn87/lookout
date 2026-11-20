@@ -38,7 +38,9 @@ logout, so it can't deliver alerts during play there.
 
 ## Setup
 
-1. `python -m venv .venv` and `.venv\Scripts\pip install -r requirements.txt`
+1. `python -m venv .venv` and `.venv\Scripts\pip install -r requirements.txt`. Install
+   GLAS with its `bitwarden` extra in this environment too (for example,
+   `.venv\Scripts\pip install "path\to\glas[bitwarden]"`).
 2. Copy `config.example.json` to `config.json` and keep its settings free of credentials. Map
    `PUSHOVER_TOKEN` and `PUSHOVER_USER` in the local GLAS companion manifest.
 3. `.venv\Scripts\python install.py` copies the addon into every installed game version.
@@ -112,8 +114,9 @@ license; see [vendor attribution](addon/Lookout/vendor/README.md).
 
 `scripts/with-glas.py` launches this application using the ignored reference manifest
 `config/glas.local.json`. Set `GLAS_PYTHON` to a Python installation with GLAS and
-Bitwarden support, `GLAS_ROOT` if using a source checkout, and `GLAS_HOME` to the
-selected native-store profile inventory. Run the launcher with the application
+Bitwarden support if it is not installed in the application's `.venv`, `GLAS_ROOT`
+if using a source checkout, and `GLAS_HOME` to the selected native-store profile
+inventory. Run the launcher with the application
 Python interpreter; normal arguments go to the application. Use `--exec` followed
 by an explicit trusted command for an alternate entry point. Secret values are
 fetched only into the child environment. The tray launcher requires the GLAS
