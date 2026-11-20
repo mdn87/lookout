@@ -18,8 +18,7 @@ URGENT = {"queue", "readycheck", "invite"}   # these time out in game, so they b
 
 
 def load_config(path=CONFIG):
-    """config.json: {"pushover": {"token": ..., "user": ...}, optional "chat_log",
-    "screenshot_dirs" and "keep_screenshots"}."""
+    """Read nonsecret companion settings from config.json."""
     try:
         return json.loads(Path(path).read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -27,8 +26,7 @@ def load_config(path=CONFIG):
 
 
 def pushover_keys(config):
-    keys = config.get("pushover") or {}
-    return os.environ.get("PUSHOVER_TOKEN") or keys.get("token"), os.environ.get("PUSHOVER_USER") or keys.get("user")
+    return os.environ.get("PUSHOVER_TOKEN"), os.environ.get("PUSHOVER_USER")
 
 
 def compose(signals, dropped=0):
@@ -49,7 +47,7 @@ def send(config, *signals, dropped=0):
     """Send one push for these alerts. Returns (sent, detail)."""
     token, user = pushover_keys(config)
     if not token or not user or token.startswith("your-") or user.startswith("your-"):
-        return False, f"no Pushover keys yet: paste your token and user key into {CONFIG}"
+        return False, "no Pushover keys yet: configure the GLAS companion manifest"
     title, message, priority = compose(signals, dropped)
     body = urllib.parse.urlencode({
         "token": token, "user": user, "title": title, "message": message, "priority": priority,
