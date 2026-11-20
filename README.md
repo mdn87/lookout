@@ -39,7 +39,8 @@ logout, so it can't deliver alerts during play there.
 ## Setup
 
 1. `python -m venv .venv` and `.venv\Scripts\pip install -r requirements.txt`
-2. Copy `config.example.json` to `config.json` and add your Pushover app token and user key.
+2. Copy `config.example.json` to `config.json` and keep its settings free of credentials. Map
+   `PUSHOVER_TOKEN` and `PUSHOVER_USER` in the local GLAS companion manifest.
 3. `.venv\Scripts\python install.py` copies the addon into every installed game version.
 4. In game: `/reload`, then `/lo` for commands.
 5. Run `start-companion.cmd` for the tray icon. `--test-push` sends one test alert.
@@ -63,11 +64,12 @@ Alert kinds: `whisper`, `seen`, `keyword`, `invite`, `queue`, `readycheck`, `afk
 `/lo help how do I see which realm I'm on?` sends the question to the companion the same way an
 alert goes out, with your character's level, class, faction, realm and zone appended in square
 brackets. The companion asks an OpenAI-compatible chat endpoint and pushes the answer to your
-phone as a `Lookout answer` alert (and a tray notification). Settings live in the `assistant`
-block of `config.json`: `url` is the API base (`.../v1`), `model` the model name, `key` optional.
-`url` and `key` fall back to the `LOOKOUT_AI_URL` / `LOOKOUT_AI_KEY` environment variables,
-then `OMNIROUTE_BASE_URL` / `OMNIROUTE_API_KEY`; `model` falls back to `LOOKOUT_AI_MODEL`.
-`python -m companion.app --ask "..."` tries it from a terminal. Questions are rate limited like
+phone as a `Lookout answer` alert (and a tray notification). Nonsecret settings live in the
+`assistant` block of `config.json`: `url` is the API base (`.../v1`) and `model` is the model name.
+The endpoint and model can also use `LOOKOUT_AI_URL` / `LOOKOUT_AI_MODEL` or
+`OMNIROUTE_BASE_URL`. Map `LOOKOUT_AI_KEY` or `OMNIROUTE_API_KEY` through GLAS if the
+selected endpoint needs authentication.
+`python scripts/with-glas.py --ask "..."` tries it from a terminal. Questions are rate limited like
 any other phone alert, and the answer usually takes ten seconds or so.
 
 ## Tests
@@ -92,12 +94,11 @@ proved a screenshot reaches the phone without logging out.
 workflow builds `Lookout-v0.2.0-forever.zip` with only the addon folder and attaches it to a GitHub
 release.
 
-**Wago** (https://addons.wago.io/addons/lookout) gets the same zip from the packager: `Lookout.toc`
-carries `## X-Wago-ID: 96EXEjNg` and the repository has a `WAGO_API_TOKEN` secret. The run log
-prints `Uploading ... to https://addons.wago.io/addons/96EXEjNg` followed by `Success!`.
+**Wago** (https://addons.wago.io/addons/lookout) receives the GitHub release zip through
+`scripts/publish_wago.py`, launched with a separate GLAS manifest that maps `WAGO_API_TOKEN`.
+The script validates the archive's Wago ID and Classic Forever patch before upload.
 
-**CurseForge** uploads start once it is set up: add `## X-Curse-Project-ID: 123456` to `Lookout.toc`
-and a `CF_API_KEY` repository secret (from authors.curseforge.com/#/settings/api-tokens).
+**CurseForge** publishing needs its own BWS-backed publisher after the project and token are created.
 
 The companion app isn't part of the addon zip. Step-by-step account setup is in
 [docs/publishing.md](docs/publishing.md).
@@ -110,8 +111,10 @@ license; see [vendor attribution](addon/Lookout/vendor/README.md).
 ## Local Bitwarden launch
 
 `scripts/with-glas.py` launches this application using the ignored reference manifest
-`config/glas.local.json` and the sibling Glas checkout. Run it with the application
+`config/glas.local.json`. Set `GLAS_PYTHON` to a Python installation with GLAS and
+Bitwarden support, `GLAS_ROOT` if using a source checkout, and `GLAS_HOME` to the
+selected native-store profile inventory. Run the launcher with the application
 Python interpreter; normal arguments go to the application. Use `--exec` followed
 by an explicit trusted command for an alternate entry point. Secret values are
-fetched only into the child environment; no `.env` file is generated. Existing
-local configuration remains the fallback for launches outside this wrapper.
+fetched only into the child environment. The tray launcher requires the GLAS
+manifest. Credential fields in `config.json` are ignored.

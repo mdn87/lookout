@@ -14,6 +14,12 @@ def test_injected_pushover_keys_override_json_and_work_without_saved_keys(monkey
     assert notify.pushover_keys({"pushover":{"token":"old","user":"old"}}) == ("synthetic-injected-token", "synthetic-injected-user")
 
 
+def test_saved_pushover_keys_are_not_used_without_injected_keys(monkeypatch):
+    monkeypatch.delenv("PUSHOVER_TOKEN", raising=False)
+    monkeypatch.delenv("PUSHOVER_USER", raising=False)
+    assert notify.pushover_keys({"pushover": {"token": "saved-token", "user": "saved-user"}}) == (None, None)
+
+
 def test_parse_signal_lines_only():
     assert chatlog.parse(SELF_IN) == chatlog.Signal("Yizzity", "whisper", "Saalora-Zephras: hi")
     assert chatlog.parse(SELF_OUT) == chatlog.parse(SELF_IN)
@@ -136,11 +142,16 @@ def test_assistant_posts_the_question_and_returns_the_answer():
         seen["timeout"] = timeout
         return FakeReply({"choices": [{"message": {"content": "  Type /script print(GetRealmName())  "}}]})
 
-    config = {"assistant": {"url": "http://gw/v1/", "key": "k", "model": "m", "timeout": 7}}
-    text, detail = assistant.ask(config, "which realm? [Yizzity, Whitemane]", opener=opener, environ={})
+    config = {"assistant": {"url": "http://gw/v1/", "key": "saved-key", "model": "m", "timeout": 7}}
+    text, detail = assistant.ask(config, "which realm? [Yizzity, Whitemane]", opener=opener, environ={"LOOKOUT_AI_KEY": "k"})
     assert text == "Type /script print(GetRealmName())" and detail == "m answered"
     assert seen["url"] == "http://gw/v1/chat/completions" and seen["auth"] == "Bearer k" and seen["timeout"] == 7
     assert seen["body"]["model"] == "m" and seen["body"]["messages"][1]["content"] == "which realm? [Yizzity, Whitemane]"
+
+
+def test_saved_assistant_key_is_not_used_without_injected_key():
+    config = {"assistant": {"url": "http://gw/v1", "key": "saved-key", "model": "m"}}
+    assert assistant.settings(config, environ={})[1] is None
 
 
 def test_assistant_falls_back_to_the_environment():

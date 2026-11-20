@@ -5,6 +5,7 @@ config.json
 .Codex/handoff.md
 .Codex/handoff-history/
 /config/glas.local.json
+/config/glas.wago.local.json
 
 # Local Lugos work-in-progress state
 .lugos-wip/

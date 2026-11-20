@@ -2,8 +2,8 @@
 
 The addon sends the question as a "help" alert with the character's whereabouts in square
 brackets. The answer goes back to the phone as an "answer" alert. Settings come from the
-"assistant" block in config.json, then the LOOKOUT_AI_URL / LOOKOUT_AI_KEY / LOOKOUT_AI_MODEL
-environment variables, then OMNIROUTE_BASE_URL / OMNIROUTE_API_KEY for a LiteLLM-style gateway.
+"assistant" block in config.json supplies nonsecret settings. GLAS supplies the
+LOOKOUT_AI_KEY or OMNIROUTE_API_KEY through the child process environment.
 """
 import json
 import os
@@ -20,10 +20,10 @@ MAX_ANSWER = 1000   # Pushover takes 1024
 
 
 def settings(config, environ=os.environ):
-    """(url, key, model, timeout) with config first and the environment as the fallback."""
+    """Return endpoint settings and the injected key for this launch."""
     block = config.get("assistant") or {}
     url = block.get("url") or environ.get("LOOKOUT_AI_URL") or environ.get("OMNIROUTE_BASE_URL")
-    key = block.get("key") or environ.get("LOOKOUT_AI_KEY") or environ.get("OMNIROUTE_API_KEY")
+    key = environ.get("LOOKOUT_AI_KEY") or environ.get("OMNIROUTE_API_KEY")
     model = block.get("model") or environ.get("LOOKOUT_AI_MODEL")
     return url, key, model, block.get("timeout") or 60
 

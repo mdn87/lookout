@@ -1,11 +1,6 @@
 {
-  "pushover": {
-    "token": "your-pushover-application-token",
-    "user": "your-pushover-user-key"
-  },
   "assistant": {
     "url": "http://localhost:11434/v1",
-    "key": null,
     "model": "llama3.1",
     "timeout": 60
   },
